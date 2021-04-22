@@ -1,0 +1,493 @@
+student controller:
+package com.pack.controller;
+
+import java.util.List;
+import java.util.Random;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+
+import com.pack.model.Student;
+import com.pack.service.StudentService;
+
+@Controller
+public class StudentController {
+	
+	Logger logger=Logger.getLogger(StudentController.class);
+	
+	@Autowired
+	private StudentService studentservice;
+	
+	@RequestMapping(value="/")
+	public String studentRegistrationPage(ModelMap map) {
+		logger.info("inside studentRegistrationpage");
+		Student student=new Student();
+		map.addAttribute("StudentForm",student);
+		return "StudentRegister";
+		
+	}
+	@RequestMapping(value="/insertStudent",method=RequestMethod.POST)
+	public String saveStudent(@Validated@ModelAttribute("StudentForm") Student stud,BindingResult result,
+			ModelMap map) {
+		String response="";
+		if(result.hasErrors()) {
+			response="StudentRegister";
+		}
+		else {
+			Random r=new Random();
+			int id=r.nextInt(99999)+10000;
+			stud.setId(id);
+			studentservice.insertStudent(stud);
+			List<Student> studlist=studentservice.fetchAllStudent();
+			map.addAttribute("studentList",studlist);
+			response="StudentSuccess";
+		}
+		return response;
+		
+	}
+	
+	@RequestMapping(value="/deleteStud/{id}")
+	public String deleteStudent(@PathVariable("id") Integer studid,ModelMap map) {
+		studentservice.deleteStudent(studid);
+		List<Student> studlist=studentservice.fetchAllStudent();
+		map.addAttribute("studentList",studlist);
+		return "StudentSuccess";
+		
+	}
+	
+
+	@RequestMapping(value="/fetchById/{id}")
+	public String fetchStudentById(@PathVariable("id") Integer studid,ModelMap map) {
+		logger.info("inside  fetchStudentById()");
+		Student student=studentservice.fetchStudentById(studid);
+		map.addAttribute("updateForm",student);
+		return "StudentUpdate";
+		}
+	
+	@RequestMapping(value="/updateStudent",method=RequestMethod.POST)
+	public String updateStudent(@Validated@ModelAttribute("updateForm")Student stud,BindingResult result,ModelMap map) {
+		logger.info("inside update Student()");
+		String response="";
+		
+		if(result.hasErrors()) {
+			response="StudentUpdate";
+		}
+		else {
+			studentservice.updateStudent(stud);
+			List<Student> studlist=studentservice.fetchAllStudent();
+			map.addAttribute("studentList",studlist);
+			response="StudentSuccess";
+		}
+		return response;
+	}
+
+}
+
+studentregister
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+    <%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+    <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>StudentRegistrationPage</title>
+</head>
+<body>
+<h3>Student Registration Page</h3>
+<c:url var="studAction" value="/insertStudent"/>
+<form:form action="${studAction}" method="post" modelAttribute="StudentForm">
+<table>
+<tr>
+	<td>StudentName:</td>
+	<td><form:input type="text" path="name"/></td><font color="red"/><form:errors path="name"></form:errors>
+</tr>
+<tr>
+	<td>Age:</td>
+	<td><form:input type="text" path="age"/><font color="red"/><form:errors path="age"></form:errors></td>
+</tr>
+<tr>
+	<td>Date of Birth:</td>
+	<td><form:input type="date" path="dob"/><font color="red"/><form:errors path="dob"></form:errors></td>
+</tr>
+<tr>
+	<td>Gender:</td>
+	<td><form:radiobutton path="gender" value="male"/>Male
+		<form:radiobutton path="gender" value="female"/>Female
+		<font color="red"/><form:errors path="gender"></form:errors></td>
+</tr>
+<tr>
+	<td>Address:</td>
+	<td><form:input type="text" path="address"/><font color="red"/><form:errors path="address"></form:errors></td>
+</tr>
+<tr>
+	<td><input type="submit" value="Add Student"/></td>
+	<td><input type="reset" value="clear"/></td>
+</tr>
+
+</table>
+</form:form>
+</body>
+</html>
+
+student.java
+package com.pack.model;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+import org.hibernate.validator.constraints.NotEmpty;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.pack.Gender;
+
+@Entity
+@Table(name="student5000")
+public class Student {
+	@Id
+	private Integer id;
+	@NotEmpty
+	@Size(min=3,max=45)
+	private String name;
+	@NotNull
+	private Integer age;
+	@NotNull
+	@DateTimeFormat(pattern="yyyy-MM-d")
+	@Temporal(TemporalType.DATE)
+	private Date dob;
+	@NotEmpty
+	
+	private String gender;
+	@NotEmpty
+	private String address;
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public Integer getAge() {
+		return age;
+	}
+	public void setAge(Integer age) {
+		this.age = age;
+	}
+	public Date getDob() {
+		return dob;
+	}
+	public void setDob(Date dob) {
+		this.dob = dob;
+	}
+	public String getGender() {
+		return gender;
+	}
+	public void setGender(String gender) {
+		this.gender = gender;
+	}
+	public String getAddress() {
+		return address;
+	}
+	public void setAddress(String address) {
+		this.address = address;
+	}
+	public Student(Integer id, String name, Integer age, Date dob, String gender, String address) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.age = age;
+		this.dob = dob;
+		this.gender = gender;
+		this.address = address;
+	}
+	public Student() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	
+	
+
+}
+
+student service
+package com.pack.service;
+
+import java.util.List;
+
+import com.pack.model.Student;
+
+public interface StudentService {
+	public void insertStudent(Student stud);
+	public List<Student> fetchAllStudent();
+	public void deleteStudent(int studid);
+	public Student fetchStudentById(Integer studid);
+	public void updateStudent(Student stud);
+
+}
+
+studentserviceimpl
+package com.pack.service;
+
+import java.util.List;
+
+import javax.transaction.Transactional;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.pack.dao.StudentDao;
+import com.pack.model.Student;
+
+@Service
+@Transactional
+public class StudentServiceImpl implements StudentService {
+	Logger logger=Logger.getLogger(StudentServiceImpl.class);
+	@Autowired
+	private StudentDao studentdao;
+
+	@Override
+	public void insertStudent(Student stud) {
+		logger.info("inside inserStudent() service");
+		studentdao.insertStudent(stud);
+		
+		
+	}
+
+	@Override
+	public List<Student> fetchAllStudent() {
+		logger.info("inside fetchAllStudent() service");
+		List<Student> studlist=studentdao.fetchAllStudent();
+		return studlist;
+	}
+
+	@Override
+	public void deleteStudent(int studid) {
+		studentdao.deleteStudent(studid);
+		
+	}
+
+	@Override
+	public Student fetchStudentById(Integer studid) {
+		Student stud=studentdao.fetchStudentById(studid);
+		return stud;
+	}
+
+	@Override
+	public void updateStudent(Student stud) {
+		studentdao.updateStudent(stud);
+		
+	}
+
+	
+	
+}
+studentdao
+package com.pack.dao;
+
+import java.util.List;
+
+import com.pack.model.Student;
+
+public interface StudentDao {
+	public void insertStudent(Student stud);
+	public List<Student> fetchAllStudent();
+	public void deleteStudent(int studid);
+	public Student fetchStudentById(Integer studid);
+	public void updateStudent(Student stud);
+
+}
+
+studentdaoimpl
+package com.pack.dao;
+
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.hibernate.Query;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.pack.model.Student;
+
+@Repository
+public class StudentDaoImpl implements StudentDao {
+	
+	Logger logger=Logger.getLogger(StudentDaoImpl.class);
+	
+	@Autowired
+	private SessionFactory sessionFactory;
+
+	@Override
+	public void insertStudent(Student stud) {
+		logger.info("inside insert student() dao");
+		sessionFactory.getCurrentSession().save(stud);
+		
+		
+	}
+
+	@Override
+	public List<Student> fetchAllStudent() {
+		logger.info("inside fetchAllStudent() dao");
+		Query q=sessionFactory.getCurrentSession().createQuery("select s from Student s");
+		List studlist=q.list();
+		return studlist;
+	}
+
+	@Override
+	public void deleteStudent(int studid) {
+		Student student=(Student)sessionFactory.getCurrentSession().get(Student.class, studid);
+		sessionFactory.getCurrentSession().delete(student);
+		
+	}
+
+	@Override
+	public Student fetchStudentById(Integer studid) {
+		Student stud=(Student)sessionFactory.getCurrentSession().get(Student.class, studid);
+		return stud;
+	}
+
+	@Override
+	public void updateStudent(Student stud) {
+		sessionFactory.getCurrentSession().update(stud);
+		
+	}
+
+	
+	
+
+	
+	
+}
+
+studentsuccess.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+        <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<script>
+function deleteStudent(id){
+	if(confirm("Do u want to delete Student?")){
+		var url="deleteStud/"+id;
+		window.location.href=url;
+	}
+}
+`
+</script>
+</head>
+<body>
+
+<h1>Student Details</h1>
+<table border="1">
+<tr>
+	<th>Student Id</th>
+	<th>Name</th>
+	<th>Age</th>
+	<th>Dob</th>
+	<th>Gender</th>
+	<th>Address</th>
+	<th>Action</th>
+	
+</tr>
+<c:forEach items="${studentList}" var="stud">
+<tr>
+	<td>${stud.id }</td>
+	<td>${stud.name}</td>
+	<td>${stud.age}</td>
+	<td>${stud.dob}</td>
+	<td>${stud.gender}</td>
+	<td>${stud.address}</td>
+	
+	<td><a href="<c:url value='/deleteStud/${stud.id }'/>">Delete</a></td>
+	<td><a href="<c:url value='/fetchById/${stud.id }'/>">Edit</a></td>
+</tr>
+
+
+
+
+</c:forEach>
+</table>
+
+</body>
+</html>
+studentupdate.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+    <%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+    <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<body>
+<c:url var="studAction1" value="/updateStudent"/>
+<form:form action="${studAction1}" method="post" modelAttribute="updateForm">
+<table>
+<tr>
+	<td>StudentId:</td>
+	<td><form:input type="text" path="id" readonly="true"/></td>
+</tr>
+<tr>
+	<td>StudentName:</td>
+	<td><form:input type="text" path="name"/></td><font color="red"/><form:errors path="name"></form:errors>
+</tr>
+<tr>
+	<td>Age:</td>
+	<td><form:input type="text" path="age"/><font color="red"/><form:errors path="age"></form:errors></td>
+</tr>
+<tr>
+	<td>Date of Birth:</td>
+	<td><form:input type="date" path="dob"/><font color="red"/><form:errors path="dob"></form:errors></td>
+</tr>
+<tr>
+	<td>Gender:</td>
+	<td><form:radiobutton path="gender" value="male" onClick="return false"/>Male
+		<form:radiobutton path="gender" value="female" onClick="return false"/>Female
+		</td>
+</tr>
+<tr>
+	<td>Address:</td>
+	<td><form:input type="text" path="address"/><font color="red"/><form:errors path="address"></form:errors></td>
+</tr>
+<tr>
+	<td><input type="submit" value="Update Student"/></td>
+	
+</tr>
+
+</table>
+</form:form>
+
+</body>
+</html>
